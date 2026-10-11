@@ -1,0 +1,21 @@
+name: Report a problem
+description: Something on the site is not working as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Tell us what you did and what you saw instead of what you expected.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: "Chrome on Windows, Safari on iPhone, ..."
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: A screenshot is very helpful. You can drag it into this box.

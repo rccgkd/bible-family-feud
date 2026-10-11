@@ -1,0 +1,10 @@
+# Keeps the GitHub Actions used by this repository up to date.
+# (The site itself has no third-party code packages to update.)
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(actions)"

@@ -1,0 +1,95 @@
+# Builds, checks and publishes the site to GitHub Pages.
+#  - Pull requests: build + checks only (the live site is never touched). A downloadable copy is attached to the run.
+#  - Pushes to main and manual runs: build + checks + deploy.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege by default; the deploy job asks for more below.
+permissions:
+  contents: read
+
+# Deployments never overlap. Newer pull-request runs replace older ones.
+concurrency:
+  group: site-${{ github.event_name == 'pull_request' && github.ref || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build site
+        run: node scripts/build.mjs
+
+      - name: Check question bank, links and scripts
+        run: node scripts/check.mjs
+
+      - name: Upload site for Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Attach a downloadable copy (pull requests)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-preview
+          path: dist
+          retention-days: 7
+
+  lighthouse:
+    name: Lighthouse report
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: true # a report, never a blocker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/build.mjs
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./.lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  links:
+    name: Link check
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: true # external sites go down; don't block a release for that
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --accept 200,206,403,429 "README.md" "docs/**/*.md" "*.html"
+          fail: true
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
