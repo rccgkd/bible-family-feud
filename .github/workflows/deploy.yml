@@ -24,7 +24,7 @@ jobs:
     name: Build and check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -73,7 +73,7 @@ jobs:
     needs: build
     continue-on-error: true # external sites go down; don't block a release for that
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: lycheeverse/lychee-action@v2
         with:
           args: --no-progress --accept 200,206,403,429 "README.md" "docs/**/*.md" "*.html"
